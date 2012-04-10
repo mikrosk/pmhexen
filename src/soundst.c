@@ -840,7 +840,10 @@ void S_SetMusicVolume(void)
 {
 	if(i_CDMusic)
 	{
-		I_CDMusSetVolume(snd_MusicVolume*16); // 0-255
+		if(I_CDMusSetVolume(snd_MusicVolume*16) == -1) // 0-255
+		{
+			return;
+		}
 	}
 	else
 	{

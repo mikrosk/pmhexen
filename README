@@ -36,7 +36,8 @@ hexen.wad	Hexen, commercial or demo
 	'-mem <n>' to change memory allocated to game in KB (8192 is default = 8MB).
 	'-yieldcpu [on|off]' to free some CPU time (default is off for Atari,
 	 and on for other systems).
-	'-cdmusic' to play music from CD instead of MIDI.
+	'-cdmusic' to play music from CD instead of MIDI. Note: volume change
+	  from menu is usable only on Atari.
 	'-iwad /path/to/filename.wad' if game data file is not in current
 	  directory.
 	'-overlay' use SDL YUV Overlay if available to scale screen.
