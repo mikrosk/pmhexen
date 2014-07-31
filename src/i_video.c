@@ -369,6 +369,9 @@ void I_FinishUpdate (void)
 		
 			if (!shadow) {
 				screen = sdl_screen->pixels;
+				screen += update_area.y * sdl_screen->pitch;
+				screen += update_area.x;
+
 				R_ExecuteSetViewSize();
 			}
 		} else {
@@ -576,8 +579,10 @@ static void InitSdlMode(int width, int height, int bpp)
 		}
 
 	 	screen = output_surf->pixels;
-		screen += update_area.y * output_surf->pitch;
-		screen += update_area.x;
+		if (output_surf!=shadow) {
+			screen += update_area.y * output_surf->pitch;
+			screen += update_area.x;
+		}
 
 		sysvideo.width = update_area.w;
 		sysvideo.height = update_area.h;
