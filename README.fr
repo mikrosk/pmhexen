@@ -40,8 +40,6 @@ hexen.wad	Hexen, commercial ou demo
 	'-flat' pour désactiver le texturage des sols/plafonds.
 	'-mem <n>' pour choisir la quantite de memoire allouee au jeu en Ko (8192
 	  par defaut, soit 8 Mo).
-	'-yieldcpu [on|off]' pour liberer le CPU de temps en temps (par defaut
-	  off sur Atari, on sur les autres systemes).
 	'-cdmusic' pour jouer la musique du CD au lieu du MIDI.
 	'-iwad /path/to/filename.wad' si le fichier de donnees du jeu ne se
 	  trouve pas dans le repertoire courant.
