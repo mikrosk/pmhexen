@@ -352,16 +352,20 @@ void I_FinishUpdate (void)
 
                 SDL_DisplayYUVOverlay(overlay, &ov_rect);
 	} else {
-		if (!shadow && SDL_MUSTLOCK(sdl_screen)) {
+		if (SDL_MUSTLOCK(sdl_screen)) {
 			SDL_UnlockSurface(sdl_screen);
 		}
 
 		if (shadow) {
 			SDL_BlitSurface(shadow, NULL, sdl_screen, &update_area);
 		}
+		SDL_Flip(sdl_screen);
+
+		if (SDL_MUSTLOCK(sdl_screen)) {
+			SDL_LockSurface(sdl_screen);
+		}
+
 		if (sdl_screen->flags & SDL_DOUBLEBUF) {
-			SDL_Flip(sdl_screen);
-		
 			if (!shadow) {
 				screen = sdl_screen->pixels;
 				screen += update_area.y * sdl_screen->pitch;
@@ -369,12 +373,6 @@ void I_FinishUpdate (void)
 
 				R_ExecuteSetViewSize();
 			}
-		} else {
-			SDL_UpdateRects(sdl_screen, 1, &update_area);
-		}
-
-		if (!shadow && SDL_MUSTLOCK(sdl_screen)) {
-			SDL_LockSurface(sdl_screen);
 		}
 	}
 
@@ -540,10 +538,10 @@ static void InitSdlMode(int width, int height, int bpp)
 
 		 	output_surf = shadow;
 		}
-	}
 
-	if (!sysvideo.overlay && !shadow && SDL_MUSTLOCK(sdl_screen)) {
-		SDL_LockSurface(sdl_screen);
+		if (SDL_MUSTLOCK(sdl_screen)) {
+			SDL_LockSurface(sdl_screen);
+		}
 	}
 
 	/* Preserve aspect ratio */
