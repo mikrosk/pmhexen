@@ -371,7 +371,7 @@ void I_FinishUpdate (void)
 				screen += update_area.y * sdl_screen->pitch;
 				screen += update_area.x;
 
-				R_ExecuteSetViewSize();
+				R_InitBuffer (scaledviewwidth, viewheight);
 			}
 		}
 	}
