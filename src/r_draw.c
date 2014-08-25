@@ -145,7 +145,7 @@ void R_DrawColumn (void)
 void R_DrawColumn060 (void) 
 { 
 	int	count, rshift;
-	byte	*dest, *dest_end;
+	byte	*dest;
 	fixed_t	frac, fracstep;
 
 	// Zero length, column does not exceed a pixel.
@@ -164,7 +164,6 @@ void R_DrawColumn060 (void)
 	// Use ylookup LUT to avoid multiply with ScreenWidth.
 	// Use columnofs LUT for subwindows? 
 	dest = ylookup[dc_yl] + columnofs[dc_x];  
-	dest_end = &dest[count*sysvideo.pitch];
 
 	// Determine scaling,
 	//  which is the only mapping to be done.
@@ -178,28 +177,32 @@ void R_DrawColumn060 (void)
 #if defined(__GNUC__) && (defined(__m68k__) && !defined(__mcoldfire__))
 
     __asm__ __volatile__ (
-"	moveql	#0,d1\n"
-"	movel	%1,d0\n"
-"	lsrl	%2,d0\n"
+	"moveql	#0,d1\n\t"
+	"movel	%1,d0\n\t"
+	"lsrl	%2,d0\n"
 
-"R_DrawColumn060_loop:\n"
-"	moveb	%3@(0,d0:w),d1\n"
-"	addl	%0,%1\n"
-"	moveb	%4@(0,d1:l),d1\n"
-"	movel	%1,d0\n"
-"	lsrl	%2,d0\n"
-"	moveb	d1,%5@\n"
-"	cmpal	%7,%5\n"
-"	addw	%6,%5\n"
+"R_DrawColumn060_loop:\n\t"
+	"moveb	%3@(0,d0:w),d1\n\t"
+	"addl	%0,%1\n\t"
 
-"	bnes	R_DrawColumn060_loop"
+	"moveb	%4@(0,d1:l),d2\n\t"
+	"movel	%1,d0\n\t"
+
+	"moveb	d2,%5@\n\t"
+	"lsrl	%2,d0\n\t"
+
+	"subqw	#1,%7\n\t"
+	"addal	%6,%5\n\t"
+
+	"bpls	R_DrawColumn060_loop\n"
+
 	 	: /* no return value */
 	 	: /* input */
 	 		"d"(fracstep), "d"(frac), "d"(rshift),
 			"a"(dc_source), "a"(dc_colormap), "a"(dest),
-			"a"(sysvideo.pitch), "a"(dest_end)
+			"a"(sysvideo.pitch), "d"(count)
 	 	: /* clobbered registers */
-	 		"d0", "d1", "cc", "memory" 
+	 		"d0", "d1", "d2", "cc", "memory" 
 	);
 #endif
 } 
@@ -854,6 +857,232 @@ void R_DrawSpan (void)
 #endif
 }
 
+void R_DrawSpan060 (void) 
+{ 
+	unsigned short		count;
+	byte*		dest; 
+
+#ifdef RANGECHECK 
+	if (ds_x2 < ds_x1 || ds_x1<0 || ds_x2>=sysvideo.width  
+		|| (unsigned)ds_y>sysvideo.height)
+		I_Error( "R_DrawSpan: %i to %i at %i", ds_x1,ds_x2,ds_y);
+#endif 
+
+	dest = ylookup[ds_y] + columnofs[ds_x1];
+
+	// We do not check for zero spans here?
+	count = ds_x2 - ds_x1 + 1; 
+
+#if defined(__GNUC__) && (defined(__m68k__) && !defined(__mcoldfire__))
+
+	{
+		long uv, uvstep;
+
+		uv = (ds_yfrac >> 6) & 0xffffUL;
+		uv |= (ds_xfrac<<10) & 0xffff0000UL;
+
+		uvstep = (ds_ystep>>6) & 0xffffUL;
+		uvstep |= (ds_xstep<<10) & 0xffff0000UL;
+
+		/* Align dest on multiple of 4 */
+		if (((Uint32) dest) & 3) {
+			int num_pix, num_pix_start;
+
+			num_pix = 4-(((Uint32) dest) & 3);
+			if (num_pix>count) {
+				num_pix = count;
+			}
+			num_pix_start = num_pix;
+
+#define ASM_dest	"%0"
+#define ASM_uv	"%1"
+#define ASM_num_pix	"%2"
+#define ASM_ds_source	"%3"
+#define ASM_uvstep	"%4"
+#define ASM_ds_colormap	"%5"
+
+    __asm__ __volatile__ (
+	"movel	" ASM_uv ",d0\n\t"
+	"moveql	#10,d2\n\t"
+	"lsrw	d2,d0\n\t"
+	"addal	" ASM_uvstep "," ASM_uv "\n\t"
+	"roll	#6,d0\n\t"
+	"moveql	#0,d1\n"
+
+"0:\n\t"
+	"moveb	" ASM_ds_source "@(0,d0:w),d1\n\t"
+	"movel	" ASM_uv ",d0\n\t"
+
+	"moveb	" ASM_ds_colormap "@(0,d1:l),d4\n\t"
+	"lsrw	d2,d0\n\t"
+
+	"moveb	d4," ASM_dest "@+\n\t"
+	"roll	#6,d0\n\t"
+
+	"subqw	#1," ASM_num_pix "\n\t"
+	"addal	" ASM_uvstep "," ASM_uv "\n\t"
+
+	"bgts	0b\n\t"
+
+	"subal	" ASM_uvstep "," ASM_uv "\n"
+	 	: /* return value */
+			"+a"(dest), "+a"(uv), "+d"(num_pix)
+	 	: /* input */
+	 		"a"(ds_source), "a"(uvstep), "a"(ds_colormap)
+	 	: /* clobbered registers */
+	 		"d0", "d1", "d2", "d4", "cc", "memory" 
+	);
+
+#undef ASM_dest
+#undef ASM_uv
+#undef ASM_num_pix
+#undef ASM_ds_source
+#undef ASM_uvstep
+#undef ASM_ds_colormap
+
+			count -= num_pix_start;
+		}
+
+		/* Main part */
+		if (count>=4) {
+			int count4, count4start;
+
+			count4 = count4start = count>>2;
+			--count4;
+
+#define ASM_dest	"%0"
+#define ASM_uv	"%1"
+#define ASM_count4	"%2"
+#define ASM_ds_source	"%3"
+#define ASM_uvstep	"%4"
+#define ASM_ds_colormap	"%5"
+
+    __asm__ __volatile__ (
+	"movel	" ASM_uv ",d0\n\t"
+	"moveql	#10,d2\n\t"
+	"lsrw	d2,d0\n\t"
+	"addal	" ASM_uvstep "," ASM_uv "\n\t"
+	"roll	#6,d0\n\t"
+	"moveql	#0,d1\n"
+
+"1:\n\t"
+	"moveb	" ASM_ds_source "@(0,d0:w),d1\n\t"	/* pixel 0 */
+	"movel	" ASM_uv ",d0\n\t"
+
+	"moveb	" ASM_ds_colormap "@(0,d1:l),d4\n\t"
+	"lsrw	d2,d0\n\t"
+
+	"lsll	#8,d4\n\t"
+	"roll	#6,d0\n\t"
+
+	"moveb	" ASM_ds_source "@(0,d0:w),d1\n\t"	/* pixel 1 */
+	"addal	" ASM_uvstep "," ASM_uv "\n\t"
+
+	"moveb	" ASM_ds_colormap "@(0,d1:l),d4\n\t"
+	"movel	" ASM_uv ",d0\n\t"
+
+	"lsll	#8,d4\n\t"
+	"lsrw	d2,d0\n\t"
+
+	"addal	" ASM_uvstep "," ASM_uv "\n\t"
+	"roll	#6,d0\n\t"
+
+	"moveb	" ASM_ds_source "@(0,d0:w),d1\n\t"	/* pixel 2 */
+	"movel	" ASM_uv ",d0\n\t"
+
+	"moveb	" ASM_ds_colormap "@(0,d1:l),d4\n\t"
+	"lsrw	d2,d0\n\t"
+
+	"lsll	#8,d4\n\t"
+	"roll	#6,d0\n\t"
+
+	"moveb	" ASM_ds_source "@(0,d0:w),d1\n\t"	/* pixel 3 */
+	"addal	" ASM_uvstep "," ASM_uv "\n\t"
+
+	"moveb	" ASM_ds_colormap "@(0,d1:l),d4\n\t"
+	"movel	" ASM_uv ",d0\n\t"
+
+	"movel	d4," ASM_dest "@+\n\t"
+	"lsrw	d2,d0\n\t"
+
+	"addal	" ASM_uvstep "," ASM_uv "\n\t"
+	"roll	#6,d0\n\t"
+
+	"dbra	" ASM_count4 ",1b\n\t"
+
+	"subal	" ASM_uvstep "," ASM_uv "\n"
+	 	: /* return value */
+			"+a"(dest), "+a"(uv), "+d"(count4)
+	 	: /* input */
+	 		"a"(ds_source), "a"(uvstep), "a"(ds_colormap)
+	 	: /* clobbered registers */
+	 		"d0", "d1", "d2", "d4", "cc", "memory" 
+	);
+
+#undef ASM_dest
+#undef ASM_uv
+#undef ASM_count4
+#undef ASM_ds_source
+#undef ASM_uvstep
+#undef ASM_ds_colormap
+
+			count -= count4start<<2;
+		}
+
+		/* Draw remaining pixels */
+		if (count>0) {
+
+#define ASM_dest	"%0"
+#define ASM_uv	"%1"
+#define ASM_num_pix	"%2"
+#define ASM_ds_source	"%3"
+#define ASM_uvstep	"%4"
+#define ASM_ds_colormap	"%5"
+
+    __asm__ __volatile__ (
+	"movel	" ASM_uv ",d0\n\t"
+	"moveql	#10,d2\n\t"
+	"lsrw	d2,d0\n\t"
+	"addal	" ASM_uvstep "," ASM_uv "\n\t"
+	"roll	#6,d0\n\t"
+	"moveql	#0,d1\n"
+
+"2:\n\t"
+	"moveb	" ASM_ds_source "@(0,d0:w),d1\n\t"
+	"movel	" ASM_uv ",d0\n\t"
+
+	"moveb	" ASM_ds_colormap "@(0,d1:l),d4\n\t"
+	"lsrw	d2,d0\n\t"
+
+	"moveb	d4," ASM_dest "@+\n\t"
+	"roll	#6,d0\n\t"
+
+	"subqw	#1," ASM_num_pix "\n\t"
+	"addal	" ASM_uvstep "," ASM_uv "\n\t"
+
+	"bgts	2b\n"
+	 	: /* return value */
+			"+a"(dest), "+a"(uv), "+d"(count)
+	 	: /* input */
+	 		"a"(ds_source), "a"(uvstep), "a"(ds_colormap)
+	 	: /* clobbered registers */
+	 		"d0", "d1", "d2", "d4", "cc", "memory" 
+	);
+
+#undef ASM_dest
+#undef ASM_uv
+#undef ASM_num_pix
+#undef ASM_ds_source
+#undef ASM_uvstep
+#undef ASM_ds_colormap
+
+		}
+
+	}
+
+#endif
+} 
+
 void R_DrawSpanFlat (void) 
 { 
     byte*		dest; 
@@ -1001,6 +1230,230 @@ void R_DrawSpanLow (void)
 #undef RENDER_PIXEL
 #endif
 }
+
+void R_DrawSpanLow060 (void) 
+{ 
+	unsigned short		count;
+	byte*		dest; 
+
+#ifdef RANGECHECK 
+	if (ds_x2 < ds_x1 || ds_x1<0 || ds_x2>=sysvideo.width  
+		|| (unsigned)ds_y>sysvideo.height)
+		I_Error( "R_DrawSpan: %i to %i at %i", ds_x1,ds_x2,ds_y);
+#endif 
+
+	dest = ylookup[ds_y] + columnofs[ds_x1<<1];
+
+	// We do not check for zero spans here?
+	count = ds_x2 - ds_x1 + 1; 
+
+#if defined(__GNUC__) && (defined(__m68k__) && !defined(__mcoldfire__))
+
+	{
+		long uv, uvstep;
+
+		uv = (ds_yfrac >> 6) & 0xffffUL;
+		uv |= (ds_xfrac<<10) & 0xffff0000UL;
+
+		uvstep = (ds_ystep>>6) & 0xffffUL;
+		uvstep |= (ds_xstep<<10) & 0xffff0000UL;
+
+		/* Align dest on multiple of 4 */
+		if (((Uint32) dest) & 3) {
+			int num_pix, num_pix_start;
+
+			num_pix = (4-(((Uint32) dest) & 3))>>1;
+			if (num_pix>count) {
+				num_pix = count;
+			}
+			num_pix_start = num_pix;
+
+#define ASM_dest	"%0"
+#define ASM_uv	"%1"
+#define ASM_num_pix	"%2"
+#define ASM_ds_source	"%3"
+#define ASM_uvstep	"%4"
+#define ASM_ds_colormap	"%5"
+
+    __asm__ __volatile__ (
+	"movel	" ASM_uv ",d0\n\t"
+	"moveql	#10,d2\n\t"
+	"lsrw	d2,d0\n\t"
+	"addal	" ASM_uvstep "," ASM_uv "\n\t"
+	"roll	#6,d0\n\t"
+	"moveql	#0,d1\n"
+
+"0:\n\t"
+	"moveb	" ASM_ds_source "@(0,d0:w),d1\n\t"
+	"movel	" ASM_uv ",d0\n\t"
+
+	"moveb	" ASM_ds_colormap "@(0,d1:l),d4\n\t"
+	"lsrw	d2,d0\n\t"
+
+	"moveb	d4,d3\n\t"
+	"lslw	#8,d4\n\t"
+
+	"moveb	d3,d4\n\t"
+
+	"move	d4," ASM_dest "@+\n\t"
+	"roll	#6,d0\n\t"
+
+	"subqw	#1," ASM_num_pix "\n\t"
+	"addal	" ASM_uvstep "," ASM_uv "\n\t"
+
+	"bgts	0b\n\t"
+
+	"subal	" ASM_uvstep "," ASM_uv "\n"
+	 	: /* return value */
+			"+a"(dest), "+a"(uv), "+d"(num_pix)
+	 	: /* input */
+	 		"a"(ds_source), "a"(uvstep), "a"(ds_colormap)
+	 	: /* clobbered registers */
+	 		"d0", "d1", "d2", "d3", "d4", "cc", "memory" 
+	);
+
+#undef ASM_dest
+#undef ASM_uv
+#undef ASM_num_pix
+#undef ASM_ds_source
+#undef ASM_uvstep
+#undef ASM_ds_colormap
+
+			count -= num_pix_start;
+		}
+
+		/* Main part */
+		if (count>=2) {
+			int count4, count4start;
+
+			count4 = count4start = (count>>1);
+			--count4;
+
+#define ASM_dest	"%0"
+#define ASM_uv	"%1"
+#define ASM_count4	"%2"
+#define ASM_ds_source	"%3"
+#define ASM_uvstep	"%4"
+#define ASM_ds_colormap	"%5"
+
+    __asm__ __volatile__ (
+	"movel	" ASM_uv ",d0\n\t"
+	"moveql	#10,d2\n\t"
+	"lsrw	d2,d0\n\t"
+	"addal	" ASM_uvstep "," ASM_uv "\n\t"
+	"roll	#6,d0\n\t"
+	"moveql	#0,d1\n"
+
+"1:\n\t"
+	"moveb	" ASM_ds_source "@(0,d0:w),d1\n\t"	/* pixel 0 */
+	"movel	" ASM_uv ",d0\n\t"
+
+	"moveb	" ASM_ds_colormap "@(0,d1:l),d4\n\t"
+	"lsrw	d2,d0\n\t"
+
+	"moveb	d4,d3\n\t"
+	"lsll	#8,d4\n\t"
+
+	"roll	#6,d0\n\t"
+	"moveb	d3,d4\n\t"
+
+	"lsll	#8,d4\n\t"
+	"addal	" ASM_uvstep "," ASM_uv "\n\t"
+
+	"moveb	" ASM_ds_source "@(0,d0:w),d1\n\t"	/* pixel 1 */
+	"movel	" ASM_uv ",d0\n\t"
+
+	"moveb	" ASM_ds_colormap "@(0,d1:l),d4\n\t"
+	"lsrw	d2,d0\n\t"
+
+	"moveb	d4,d3\n\t"
+	"lsll	#8,d4\n\t"
+
+	"roll	#6,d0\n\t"
+	"moveb	d3,d4\n\t"
+
+	"addal	" ASM_uvstep "," ASM_uv "\n\t"
+	"movel	d4," ASM_dest "@+\n\t"
+
+	"dbra	" ASM_count4 ",1b\n\t"
+
+	"subal	" ASM_uvstep "," ASM_uv "\n"
+	 	: /* return value */
+			"+a"(dest), "+a"(uv), "+d"(count4)
+	 	: /* input */
+	 		"a"(ds_source), "a"(uvstep), "a"(ds_colormap)
+	 	: /* clobbered registers */
+	 		"d0", "d1", "d2", "d3", "d4", "cc", "memory" 
+	);
+
+#undef ASM_dest
+#undef ASM_uv
+#undef ASM_count4
+#undef ASM_ds_source
+#undef ASM_uvstep
+#undef ASM_ds_colormap
+
+			count -= count4start<<1;
+		}
+
+		/* Draw remaining pixels */
+		if (count>0) {
+
+#define ASM_dest	"%0"
+#define ASM_uv	"%1"
+#define ASM_num_pix	"%2"
+#define ASM_ds_source	"%3"
+#define ASM_uvstep	"%4"
+#define ASM_ds_colormap	"%5"
+
+    __asm__ __volatile__ (
+	"movel	" ASM_uv ",d0\n\t"
+	"moveql	#10,d2\n\t"
+	"lsrw	d2,d0\n\t"
+	"addal	" ASM_uvstep "," ASM_uv "\n\t"
+	"roll	#6,d0\n\t"
+	"moveql	#0,d1\n"
+
+"2:\n\t"
+	"moveb	" ASM_ds_source "@(0,d0:w),d1\n\t"
+	"movel	" ASM_uv ",d0\n\t"
+
+	"moveb	" ASM_ds_colormap "@(0,d1:l),d4\n\t"
+	"lsrw	d2,d0\n\t"
+
+	"moveb	d4,d3\n\t"
+	"lslw	#8,d4\n\t"
+
+	"moveb	d3,d4\n\t"
+	"roll	#6,d0\n\t"
+
+	"move	d4," ASM_dest "@+\n\t"
+
+	"subqw	#1," ASM_num_pix "\n\t"
+	"addal	" ASM_uvstep "," ASM_uv "\n\t"
+
+	"bgts	2b\n"
+	 	: /* return value */
+			"+a"(dest), "+a"(uv), "+d"(count)
+	 	: /* input */
+	 		"a"(ds_source), "a"(uvstep), "a"(ds_colormap)
+	 	: /* clobbered registers */
+	 		"d0", "d1", "d2", "d3", "d4", "cc", "memory" 
+	);
+
+#undef ASM_dest
+#undef ASM_uv
+#undef ASM_num_pix
+#undef ASM_ds_source
+#undef ASM_uvstep
+#undef ASM_ds_colormap
+
+		}
+
+	}
+
+#endif
+} 
 
 void R_DrawSpanLowFlat (void) 
 { 

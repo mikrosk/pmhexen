@@ -520,6 +520,8 @@ extern  byte    *dc_translation;
 void    R_DrawSpan (void);
 void    R_DrawSpanFlat (void);
 void    R_DrawSpanLow (void);
+void 	R_DrawSpan060 (void);
+void 	R_DrawSpanLow060 (void);
 void    R_DrawSpanLowFlat (void);
 
 void    R_InitBuffer (int width, int height);
