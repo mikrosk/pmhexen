@@ -134,7 +134,9 @@ void I_InitAudio(void)
 	sysaudio.desired.userdata = NULL;
 
 	if (SDL_OpenAudio(&sysaudio.desired, &sysaudio.obtained)<0) {
-		I_Error("Could not open audio: %s\n", SDL_GetError());
+		fprintf(stderr, "Could not open audio: %s\n", SDL_GetError());
+		sysaudio.enabled = false;
+		return;
 	}
 
 	if ((sysaudio.obtained.format != AUDIO_S16SYS) || (sysaudio.obtained.channels != 2)) {
