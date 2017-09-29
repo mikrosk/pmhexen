@@ -47,6 +47,7 @@ typedef struct {
 	int resize;
 	int textured_spans;
 	int overlay;
+	int doublebuf;
 } sysvideo_t;
 
 extern sysvideo_t sysvideo;

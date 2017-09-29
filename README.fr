@@ -45,6 +45,7 @@ hexen.wad	Hexen, commercial ou demo
 	  trouve pas dans le repertoire courant.
 	'-overlay' utilise l'overlay video YUV de SDL si disponible pour
 	  agrandir l'ecran.
+	'-singlebuf' pour désactiver le double buffer video
 
 	Utilisez Alt+Enter pour passer du mode plein ecran au mode fenetre.
 	Utilisez Alt+G pour capturer ou liberer la souris.

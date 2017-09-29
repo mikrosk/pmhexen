@@ -61,7 +61,7 @@ int num_joystick;
 sysvideo_t sysvideo=
 {
 	SCREENWIDTH, SCREENHEIGHT, 8, SCREENWIDTH,
-	false, false, true, false
+	false, false, true, false, true
 };
 
 /*--- Local functions ---*/
@@ -618,7 +618,9 @@ void I_InitGraphics(void)
 		return;
 	firsttime = 0;
 
-	scr_flags = SDL_HWSURFACE|SDL_HWPALETTE|SDL_DOUBLEBUF;
+	scr_flags = SDL_HWSURFACE|SDL_HWPALETTE;
+	if (sysvideo.doublebuf)
+		scr_flags |= SDL_DOUBLEBUF;
 	if (sysvideo.fullscreen)
 		scr_flags |= SDL_FULLSCREEN;
 	if (sysvideo.resize)

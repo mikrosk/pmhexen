@@ -334,6 +334,11 @@ static void HandleArgs(void)
 		sysvideo.overlay = sysvideo.resize = true;
 	}
 
+	p=M_CheckParm ("-singlebuf");
+    if (p) {
+		sysvideo.doublebuf = false;
+	}
+
 	p=M_CheckParm ("-network");
     if (p && (p<myargc-1)) {
 		if (strcmp(myargv[p+1],"sting")==0) {
