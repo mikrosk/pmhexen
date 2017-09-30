@@ -2,6 +2,23 @@
 *                     Changes done to Hexen sources                     *
 \***********************************************************************/
 
+-------------------------------- 0.61 -----------------------------------
+
+- Added '-singlebuf' command line option to disable double buffered video
+
+- Contributed by Vincent Riviere:
+  - Disable FPU initialization if _FPU cookie is 0, even on 68060 CPU.
+  - Disable audio if no audio device can be opened, instead of quitting.
+
+-------------------------------- 0.60 -----------------------------------
+
+- Remove pause on each frame, if machine is too slow.
+
+-------------------------------- 0.59 -----------------------------------
+
+- Fixed SDL double buffer usage
+- Atari: Better 060 routines.
+
 -------------------------------- 0.58 -----------------------------------
 
 - Removed '-yieldcpu [on|off]' command-line option, useless now.
