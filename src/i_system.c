@@ -197,10 +197,11 @@ static void I_InitFpu(void)
 				: /* clobbered registers */
 					"d0", "cc"
 			);
+
+			FixedMul = FixedMul060;
+			FixedDiv2 = FixedDiv2060;
 		}
 
-		FixedMul = FixedMul060;
-		FixedDiv2 = FixedDiv2060;
 		sysgame.cpu060 = true;
 	}
 #endif
