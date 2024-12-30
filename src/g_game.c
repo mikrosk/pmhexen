@@ -88,6 +88,7 @@ short            consistancy[MAXPLAYERS][BACKUPTICS];
 //
 // controls (have defaults)
 //
+int wasd_key_up, wasd_key_down, wasd_key_left, wasd_key_right;
 int key_right, key_left, key_up, key_down;
 int key_strafeleft, key_straferight, key_jump;
 int key_fire, key_use, key_strafe, key_speed;
@@ -269,11 +270,19 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 			cmd->angleturn += angleturn[tspeed];
 	}
 
-	if (gamekeydown[key_up])
+	if (gamekeydown[wasd_key_right])
+	{
+		side += sidemove[pClass][speed];
+	}
+	if (gamekeydown[wasd_key_left])
+	{
+		side -= sidemove[pClass][speed];
+	}
+	if (gamekeydown[wasd_key_up] || gamekeydown[key_up])
 	{
 		forward += forwardmove[pClass][speed];
 	}
-	if (gamekeydown[key_down])
+	if (gamekeydown[wasd_key_down] || gamekeydown[key_down])
 	{
 		forward -= forwardmove[pClass][speed];
 	}

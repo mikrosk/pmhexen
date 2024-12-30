@@ -408,6 +408,7 @@ void M_ForceUppercase(char *text)
 int     usemouse;
 int     usejoystick;
 
+extern int wasd_key_up, wasd_key_down, wasd_key_left, wasd_key_right;
 extern int key_right, key_left, key_up, key_down;
 extern int key_strafeleft, key_straferight, key_jump;
 extern int key_fire, key_use, key_strafe, key_speed;
@@ -461,6 +462,11 @@ default_t defaults[] =
 
 	{ "sfx_volume", &snd_MaxVolume, 10},
 	{ "music_volume", &snd_MusicVolume, 10},
+
+	{ "wasd_up", &wasd_key_up, 'w' },
+	{ "wasd_down", &wasd_key_down, 's' },
+	{ "wasd_strafeleft", &wasd_key_left, 'a' },
+	{ "wasd_straferight", &wasd_key_right, 'd' },
 
 	{ "key_right", &key_right, KEY_RIGHTARROW },
 	{ "key_left", &key_left, KEY_LEFTARROW },
