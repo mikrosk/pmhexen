@@ -446,7 +446,7 @@ void I_UpdateSound(void *unused, Uint8 *stream, int len)
 				*source++ += leftvol[val];
 				*source++ += rightvol[val];
 
-#if defined(__GNUC__) && defined(__m68000__)
+#if defined(__GNUC__) && defined(__m68k__)
 				__asm__ __volatile__ (
 						"addl	%3,%1\n"	\
 					"	addxl	%2,%0"	\
