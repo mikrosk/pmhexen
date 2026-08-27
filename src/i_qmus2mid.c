@@ -10,10 +10,9 @@
    Use gcc to compile, if possible.  Please look in  "qmus2mid.h"
    for system dependencies, in particular the int2 and int4 typedef's.
 
-   For the time being, this only works for little-endian machines,
-   such as i86, dec-mips, alpha;  but not rs6000, sparc....
-
    Ripped for the lsdldoom port by Sam Lantinga - Thanks! :)
+
+   Fixed for big-endian machines by Miro Kropacek.
 */
 
 #include <stdlib.h>
@@ -64,13 +63,13 @@ static int read2(int2 *intp, buflen_t *buflen)
 
 static size_t fwrite2(const int2 *ptr, size_t size, SDL_RWops *rw)
 {
-	int4 rev = 0;
-	int i;
+	Uint8 buf[4];
+	size_t i;
 
 	for( i = 0 ; i < size ; i++ )
-		rev = (rev << 8) + (((*ptr) >> (i*8)) & 0xFF) ;
+		buf[i] = (Uint8) ((*ptr) >> ((size-1-i)*8)) ;
 
-	return SDL_RWwrite(rw,&rev, size, 1) ;
+	return SDL_RWwrite(rw, buf, size, 1) ;
 }
 
 
@@ -152,7 +151,7 @@ static int ReadMUSheader( MUSheader *MUSh, buflen_t *buflen )
 				 instruments later */
 #else
 	buflen->buf += 2*MUSh->InstrCnt;
-	buflen->len += 2*MUSh->InstrCnt;
+	buflen->len -= 2*MUSh->InstrCnt;
 #endif
 	return 0 ;
 }
