@@ -88,6 +88,12 @@ short            consistancy[MAXPLAYERS][BACKUPTICS];
 //
 // controls (have defaults)
 //
+/* mouse units per look step; a step is 5 lookdir units, and the
+   usable pitch range is 200 of them. Tune with mouse_sensitivity. */
+#define MLOOKUNIT	32
+
+/* 0 = off, 1 = mouse looks up and down, 2 = same with the look inverted */
+int mouselook;
 int wasd_key_up, wasd_key_down, wasd_key_left, wasd_key_right;
 int key_right, key_left, key_up, key_down;
 int key_strafeleft, key_straferight, key_jump;
@@ -502,15 +508,37 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 		}
 	}
 
-	if (strafe)
+	if (mouselook)
 	{
-		side += mousex*2;
+		cmd->angleturn -= mousex*0x8;
+		if (mousey && look == 0)
+		{
+			static int mlookacc = 0;
+			int mlook;
+
+			mlookacc += (mouselook == 2) ? -mousey : mousey;
+			mlook = mlookacc/MLOOKUNIT;
+			mlookacc -= mlook*MLOOKUNIT;
+			/* TOCENTER is -8, so keep clear of it */
+			if (mlook > 7)
+				mlook = 7;
+			else if (mlook < -7)
+				mlook = -7;
+			look = mlook;
+		}
 	}
 	else
 	{
-		cmd->angleturn -= mousex*0x8;
-	}	
-	forward += mousey;
+		if (strafe)
+		{
+			side += mousex*2;
+		}
+		else
+		{
+			cmd->angleturn -= mousex*0x8;
+		}
+		forward += mousey;
+	}
 	mousex = mousey = 0;
 	
 	if (forward > MaxPlayerMove[pClass])

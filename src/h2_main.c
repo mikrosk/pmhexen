@@ -77,6 +77,7 @@ static void WarpCheck(void);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
+extern int mouselook;
 extern boolean automapactive;
 extern boolean MenuActive;
 extern boolean askforquit;
@@ -325,6 +326,11 @@ static void HandleArgs(void)
     if (p) {
 		sysvideo.resize = true;
 	}
+	p=M_CheckParm ("-mouselook");
+	if (p) {
+		mouselook = 1;
+	}
+
 	p=M_CheckParm ("-flat");
     if (p) {
 		sysvideo.textured_spans = false;
