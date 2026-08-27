@@ -1,13 +1,13 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.59)
-AC_INIT(pmhexen, 0.61, patmandin@gmail.com)
+AC_PREREQ([2.59])
+AC_INIT([pmhexen], [0.61], [patmandin@gmail.com])
 AC_CONFIG_SRCDIR([src/i_system.c])
-AC_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR([autotools])
-AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE($PACKAGE_NAME, $PACKAGE_VERSION)
+AC_CANONICAL_TARGET
+AM_INIT_AUTOMAKE
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
 # Checks for programs.
@@ -15,7 +15,6 @@ AC_PROG_CC
 AM_PROG_AS
 
 # Checks for header files.
-AC_HEADER_STDC
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h malloc.h netdb.h netinet/in.h stddef.h \
 stdlib.h string.h sys/ioctl.h sys/socket.h unistd.h])
 
@@ -27,7 +26,6 @@ AC_C_VOLATILE
 AC_TYPE_SIZE_T
 
 # Checks for library functions.
-AC_PROG_GCC_TRADITIONAL
 #AC_FUNC_MALLOC
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS([atexit gethostbyname isascii memset mkdir pow socket \
@@ -62,7 +60,7 @@ AM_PATH_SDL( 1.2.0 , :, AC_MSG_ERROR([*** SDL version $SDL_VERSION not found!]))
 # SDL_mixer
 AC_ARG_ENABLE(sdlmixer,
 	[  --enable-sdlmixer      Use SDL mixer for music replay (default=yes)],
-	[WANT_SDLMIXER=$withval], [WANT_SDLMIXER=yes])
+	[WANT_SDLMIXER=$enableval], [WANT_SDLMIXER=yes])
 
 if test "x$WANT_SDLMIXER" = "xyes"; then
 	AC_CHECK_LIB(SDL_mixer, Mix_OpenAudio,
