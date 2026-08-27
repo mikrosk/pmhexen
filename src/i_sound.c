@@ -23,7 +23,7 @@
 
 extern sysaudio_t sysaudio;
 
-int snd_MaxVolume, snd_Channels = NUM_CHANNELS;
+int snd_MaxVolume, snd_MusicVolume, snd_Channels = NUM_CHANNELS;
 
 // The actual lengths of all sound effects.
 int 		lengths[NUMSFX];

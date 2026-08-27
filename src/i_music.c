@@ -32,7 +32,7 @@
 #include "i_music.h"
 #include "i_qmus2mid.h"
 
-int snd_MusicVolume;
+extern int snd_MusicVolume;
 
 #ifdef ENABLE_SDLMIXER
 static Mix_Music *music=NULL;

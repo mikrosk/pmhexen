@@ -107,7 +107,6 @@ int curpos;
 int inv_ptr;
 int ArtifactFlash;
 
-boolean i_CDMusic; // in Watcom, defined in i_ibm
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 

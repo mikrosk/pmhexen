@@ -45,7 +45,12 @@ static SDL_Surface *sdl_screen, *shadow=NULL;
 static SDL_Color colors[256];
 static SDL_Rect update_area;
 static Uint32 scr_flags;
-static int fps=0, last_fps=0, frame_tick=0;
+/* "fps" collides with the gas register alias for %fpsr when the m68k
+   assembler runs with --register-prefix-optional (needed to assemble
+   this port's bare-register asm under MiNT ELF binutils). Keep the C
+   name, override only the emitted symbol name. */
+static int fps __asm__("fps_counter") = 0;
+static int last_fps=0, frame_tick=0;
 static int new_width=0, new_height=0;
 
 static SDL_Overlay *overlay;
